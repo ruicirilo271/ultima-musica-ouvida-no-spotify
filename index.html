@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Rádio Futurista Cyberpunk - Karaoke + Artista</title>
+<title>Rádio Futurista Cyberpunk - Artista</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
 
@@ -86,9 +86,11 @@ body {
     box-shadow: 0 0 40px #0ff inset;
     margin-bottom: 15px;
 }
-.lyrics .line { opacity: 0.3; margin-bottom: 8px; transition: all 0.3s; text-shadow: 0 0 5px #0ff; }
-.lyrics .line.active { color: #0ff; font-weight: bold; opacity: 1; text-shadow: 0 0 15px #0ff, 0 0 30px #0ff; animation: pulse 1s infinite; }
-@keyframes pulse { 0% {text-shadow:0 0 15px #0ff,0 0 30px #0ff;} 50% {text-shadow:0 0 30px #0ff,0 0 60px #0ff;} 100% {text-shadow:0 0 15px #0ff,0 0 30px #0ff;} }
+.lyrics .line { 
+    opacity: 1; 
+    margin-bottom: 8px; 
+    text-shadow: 0 0 5px #0ff; 
+}
 
 .artist-info {
     background-color: rgba(0,0,0,0.6);
@@ -145,8 +147,6 @@ body {
 const lastFmApiKey = '6e7c0a29cd508f42a6737e5fd3d6110b';
 const username = 'ruicirilo';
 let currentTrackId = null;
-let lyricsData = [];
-let lyricTimer;
 
 // Fundo animado equalizador
 const bg = document.getElementById('background');
@@ -201,29 +201,18 @@ async function fetchLyrics(artist, track){
         const res = await fetch(`/lyrics?artist=${encodeURIComponent(artist)}&track=${encodeURIComponent(track)}`);
         const data = await res.json();
         showLyrics(data.lines);
-    }catch(e){ console.error('Erro ao carregar letra', e); showLyrics([{text:'Erro ao carregar letra', time:0}]); }
+    }catch(e){ console.error('Erro ao carregar letra', e); showLyrics([{text:'Erro ao carregar letra'}]); }
 }
 
 function showLyrics(lines){
-    lyricsData = lines;
     const container = document.getElementById('lyrics-container');
     container.innerHTML = '';
-    lines.forEach((l, idx)=>{
+    lines.forEach(l=>{
         const div = document.createElement('div');
         div.classList.add('line');
-        div.id = 'line-'+idx;
         div.textContent = l.text;
         container.appendChild(div);
     });
-    if(lyricTimer) clearInterval(lyricTimer);
-    let index = 0;
-    lyricTimer = setInterval(()=>{
-        document.querySelectorAll('.lyrics .line').forEach(l=>l.classList.remove('active'));
-        document.getElementById('line-'+index)?.classList.add('active');
-        document.getElementById('line-'+index)?.scrollIntoView({behavior:'smooth', block:'center'});
-        index++;
-        if(index>=lyricsData.length) index=0;
-    },3000);
 }
 
 async function fetchArtistInfo(artist){
@@ -279,5 +268,7 @@ setInterval(fetchRecent,30000);
 </script>
 </body>
 </html>
+
+
 
 
