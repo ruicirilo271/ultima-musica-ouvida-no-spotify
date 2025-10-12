@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rádio Futurista Cyberpunk - Karaoke + Artista</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
+
+/* Corpo da página */
+body {
+    margin: 0;
+    padding: 20px 0;
+    font-family: 'Orbitron', sans-serif;
+    background: #111;
+    color: #0ff;
+    display: flex;
+    justify-content: center; /* centraliza horizontalmente */
+    align-items: flex-start;
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+
+/* Fundo animado estilo equalizador */
+#background {
+    position: fixed;
+    top:0; left:0;
+    width:100%; height:100%;
+    z-index:-1;
+    display:flex;
+    align-items:flex-end;
+}
+.bar {
+    width:4px;
+    margin:0 1px;
+    background: #0ff;
+    animation: bounce 0.5s infinite alternate;
+}
+@keyframes bounce {
+    0% {height:10px;}
+    100% {height:200px;}
+}
+
+/* Container principal */
+.container {
+    display: flex;
+    flex-direction: row;
+    gap: 20px;
+    width: 100%;
+    max-width: 1200px;  /* largura máxima */
+    justify-content: center; /* centraliza elementos internos */
+}
+
+/* Player */
+.player {
+    background-color: rgba(0,0,0,0.95);
+    border-radius: 20px;
+    padding: 20px;
+    width: 400px;
+    box-shadow: 0 0 60px #0ff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.player img {
+    width: 400px; height:400px; object-fit: cover;
+    border-radius: 15px; margin-bottom: 15px;
+    box-shadow: 0 0 35px #0ff;
+}
+
+.track-info { text-align: center; margin-bottom: 15px; }
+.track-info .track-name { font-size: 24px; font-weight: bold; color: #0ff; text-shadow: 0 0 15px #0ff, 0 0 25px #0ff; }
+.track-info .artist-name { font-size: 18px; color: #0ff; text-shadow: 0 0 10px #0ff; }
+
+.lyrics {
+    background-color: rgba(0,0,0,0.6);
+    padding: 15px;
+    border-radius: 15px;
+    width: 100%;
+    height: 250px;
+    overflow-y: auto;
+    font-size: 16px;
+    line-height: 1.5;
+    position: relative;
+    box-shadow: 0 0 40px #0ff inset;
+    margin-bottom: 15px;
+}
+.lyrics .line { opacity: 0.3; margin-bottom: 8px; transition: all 0.3s; text-shadow: 0 0 5px #0ff; }
+.lyrics .line.active { color: #0ff; font-weight: bold; opacity: 1; text-shadow: 0 0 15px #0ff, 0 0 30px #0ff; animation: pulse 1s infinite; }
+@keyframes pulse { 0% {text-shadow:0 0 15px #0ff,0 0 30px #0ff;} 50% {text-shadow:0 0 30px #0ff,0 0 60px #0ff;} 100% {text-shadow:0 0 15px #0ff,0 0 30px #0ff;} }
+
+.artist-info {
+    background-color: rgba(0,0,0,0.6);
+    padding: 10px;
+    border-radius: 15px;
+    width: 100%;
+    text-align: center;
+    font-size: 14px;
+    line-height: 1.4;
+    box-shadow: 0 0 30px #0ff inset;
+}
+.artist-info img { width: 100px; height:100px; border-radius:50%; margin-bottom:10px; }
+
+.sidebar { display: flex; flex-direction: column; gap: 20px; width: 300px; }
+.box {
+    background-color: rgba(0,0,0,0.9);
+    padding: 15px;
+    border-radius: 15px;
+    box-shadow: 0 0 50px #0ff;
+}
+.box h2 { text-align: center; margin-bottom: 10px; font-size: 20px; color: #0ff; text-shadow: 0 0 6px #0ff; }
+.list-item { margin: 5px 0; font-size: 16px; }
+.list-item span { color: #0ff; font-weight: bold; text-shadow: 0 0 6px #0ff; }
+
+</style>
+</head>
+<body>
+<div id="background"></div>
+<div class="container">
+    <div class="player">
+        <img id="album-cover" src="https://via.placeholder.com/400" alt="Capa do Álbum">
+        <div class="track-info">
+            <div class="track-name" id="track-name">Carregando...</div>
+            <div class="artist-name" id="artist-name"></div>
+        </div>
+        <div class="lyrics" id="lyrics-container">
+            <div class="line">Letra não disponível.</div>
+        </div>
+        <div class="artist-info" id="artist-info"></div>
+    </div>
+    <div class="sidebar">
+        <div class="box">
+            <h2>Top 10 Mais Tocadas</h2>
+            <div id="top10"></div>
+        </div>
+        <div class="box">
+            <h2>Últimas Tocadas</h2>
+            <div id="recent"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+const lastFmApiKey = '6e7c0a29cd508f42a6737e5fd3d6110b';
+const username = 'ruicirilo';
+let currentTrackId = null;
+let lyricsData = [];
+let lyricTimer;
+
+// Fundo animado equalizador
+const bg = document.getElementById('background');
+function createBars(){
+    bg.innerHTML = '';
+    const numBars = Math.ceil(window.innerWidth / 6);
+    for(let i=0;i<numBars;i++){
+        const bar = document.createElement('div');
+        bar.classList.add('bar');
+        bar.style.animationDuration = (0.4+Math.random()*0.6)+'s';
+        bg.appendChild(bar);
+    }
+}
+createBars();
+window.addEventListener('resize', createBars);
+
+async function fetchNowPlaying(){
+    try{
+        const res = await fetch(`https://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&user=${username}&api_key=${lastFmApiKey}&limit=1&format=json`);
+        const data = await res.json();
+        const track = data.recenttracks.track[0];
+        const trackId = track.mbid || (track.artist['#text']+' - '+track.name);
+        if(trackId !== currentTrackId){
+            currentTrackId = trackId;
+            const artist = track.artist['#text'];
+            const name = track.name;
+            document.getElementById('track-name').textContent = name;
+            document.getElementById('artist-name').textContent = artist;
+            fetchAlbumCoverLastFM(track);
+            fetchLyrics(artist, name);
+            fetchArtistInfo(artist);
+        }
+    } catch(e){ console.error('Erro ao carregar música', e); }
+}
+
+function fetchAlbumCoverLastFM(track){
+    let imgUrl = '';
+    if(track.image){
+        for(let i=track.image.length-1;i>=0;i--){
+            if(track.image[i]['#text']){
+                imgUrl = track.image[i]['#text'];
+                break;
+            }
+        }
+    }
+    if(!imgUrl) imgUrl = 'https://via.placeholder.com/400';
+    document.getElementById('album-cover').src = imgUrl;
+}
+
+async function fetchLyrics(artist, track){
+    try{
+        const res = await fetch(`/lyrics?artist=${encodeURIComponent(artist)}&track=${encodeURIComponent(track)}`);
+        const data = await res.json();
+        showLyrics(data.lines);
+    }catch(e){ console.error('Erro ao carregar letra', e); showLyrics([{text:'Erro ao carregar letra', time:0}]); }
+}
+
+function showLyrics(lines){
+    lyricsData = lines;
+    const container = document.getElementById('lyrics-container');
+    container.innerHTML = '';
+    lines.forEach((l, idx)=>{
+        const div = document.createElement('div');
+        div.classList.add('line');
+        div.id = 'line-'+idx;
+        div.textContent = l.text;
+        container.appendChild(div);
+    });
+    if(lyricTimer) clearInterval(lyricTimer);
+    let index = 0;
+    lyricTimer = setInterval(()=>{
+        document.querySelectorAll('.lyrics .line').forEach(l=>l.classList.remove('active'));
+        document.getElementById('line-'+index)?.classList.add('active');
+        document.getElementById('line-'+index)?.scrollIntoView({behavior:'smooth', block:'center'});
+        index++;
+        if(index>=lyricsData.length) index=0;
+    },3000);
+}
+
+async function fetchArtistInfo(artist){
+    try{
+        const res = await fetch(`/artist?artist=${encodeURIComponent(artist)}`);
+        const data = await res.json();
+        const container = document.getElementById('artist-info');
+        container.innerHTML = '';
+        if(data.image) container.innerHTML += `<img src="${data.image}" alt="${artist}">`;
+        container.innerHTML += `<div>${artist}</div>`;
+        if(data.tags.length) container.innerHTML += `<div>${data.tags.join(', ')}</div>`;
+        container.innerHTML += `<div>${data.bio}</div>`;
+    }catch(e){ console.error('Erro ao carregar info artista', e); }
+}
+
+async function fetchTop10(){
+    try{
+        const res = await fetch(`https://ws.audioscrobbler.com/2.0/?method=user.gettoptracks&user=${username}&api_key=${lastFmApiKey}&period=7day&limit=10&format=json`);
+        const data = await res.json();
+        const container = document.getElementById('top10');
+        container.innerHTML = '';
+        data.toptracks.track.forEach((t,i)=>{
+            const div = document.createElement('div');
+            div.classList.add('list-item');
+            div.textContent = `${i+1}. ${t.name} - ${t.artist.name} (${t.playcount} plays)`;
+            container.appendChild(div);
+        });
+    }catch(e){ console.error('Erro ao carregar top 10:', e); }
+}
+
+async function fetchRecent(){
+    try{
+        const res = await fetch(`https://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&user=${username}&api_key=${lastFmApiKey}&limit=10&format=json`);
+        const data = await res.json();
+        const container = document.getElementById('recent');
+        container.innerHTML = '';
+        data.recenttracks.track.forEach(t=>{
+            const div = document.createElement('div');
+            div.classList.add('list-item');
+            const time = t.date?.['#text'] || 'Agora';
+            div.innerHTML = `<span>${t.name}</span> - ${t.artist['#text']} (${time})`;
+            container.appendChild(div);
+        });
+    }catch(e){ console.error('Erro ao carregar últimas músicas:', e); }
+}
+
+// Inicializações
+fetchNowPlaying(); fetchTop10(); fetchRecent();
+setInterval(fetchNowPlaying,15000);
+setInterval(fetchTop10,60000);
+setInterval(fetchRecent,30000);
+
+</script>
+</body>
+</html>
+
+
