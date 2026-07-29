@@ -200,6 +200,9 @@ footer {
 
 .cover-wrap {
   position: relative;
+  width: 100%;
+  min-width: 0;
+  aspect-ratio: 1 / 1;
   align-self: start;
   isolation: isolate;
 }
@@ -207,13 +210,27 @@ footer {
 .cover-wrap img {
   display: block;
   width: 100%;
-  aspect-ratio: 1;
+  height: 100%;
+  aspect-ratio: 1 / 1;
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 22px;
   object-fit: cover;
+  object-position: center;
   background: #0b1020;
   box-shadow: 0 26px 60px rgba(0, 0, 0, 0.46);
   transition: opacity 0.28s ease, transform 0.28s ease;
+}
+
+@supports not (aspect-ratio: 1 / 1) {
+  .cover-wrap {
+    height: 0;
+    padding-bottom: 100%;
+  }
+
+  .cover-wrap img {
+    position: absolute;
+    inset: 0;
+  }
 }
 
 .cover-wrap img.changing {
