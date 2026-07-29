@@ -1,279 +1,132 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
+<!doctype html>
+<html lang="pt-PT">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Rádio Futurista Cyberpunk - Karaoke + Artista</title>
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
-
-body {
-    margin: 0; padding: 0;
-    font-family: 'Orbitron', sans-serif;
-    background: #111;
-    color: #0ff;
-    display: flex;
-    justify-content: center;
-    align-items: flex-start;
-    min-height: 100vh;
-    padding-top: 20px;
-    overflow-x: hidden;
-}
-
-/* Fundo animado estilo equalizador */
-#background {
-    position: fixed;
-    top:0; left:0;
-    width:100%; height:100%;
-    z-index:-1;
-    display:flex;
-    align-items:flex-end;
-}
-.bar {
-    width:4px;
-    margin:0 1px;
-    background: #0ff;
-    animation: bounce 0.5s infinite alternate;
-}
-@keyframes bounce {
-    0% {height:10px;}
-    100% {height:200px;}
-}
-
-.container { display: flex; flex-direction: row; gap: 20px; }
-
-.player {
-    background-color: rgba(0,0,0,0.95);
-    border-radius: 20px;
-    padding: 20px;
-    width: 400px;
-    box-shadow: 0 0 60px #0ff;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
-
-.player img {
-    width: 400px; height:400px; object-fit: cover;
-    border-radius: 15px; margin-bottom: 15px;
-    box-shadow: 0 0 35px #0ff;
-}
-
-.track-info { text-align: center; margin-bottom: 15px; }
-.track-info .track-name { font-size: 24px; font-weight: bold; color: #0ff; text-shadow: 0 0 15px #0ff, 0 0 25px #0ff; }
-.track-info .artist-name { font-size: 18px; color: #0ff; text-shadow: 0 0 10px #0ff; }
-
-.lyrics {
-    background-color: rgba(0,0,0,0.6);
-    padding: 15px;
-    border-radius: 15px;
-    width: 100%;
-    height: 250px;
-    overflow-y: auto;
-    font-size: 16px;
-    line-height: 1.5;
-    position: relative;
-    box-shadow: 0 0 40px #0ff inset;
-    margin-bottom: 15px;
-}
-.lyrics .line { opacity: 0.3; margin-bottom: 8px; transition: all 0.3s; text-shadow: 0 0 5px #0ff; }
-.lyrics .line.active { color: #0ff; font-weight: bold; opacity: 1; text-shadow: 0 0 15px #0ff, 0 0 30px #0ff; animation: pulse 1s infinite; }
-@keyframes pulse { 0% {text-shadow:0 0 15px #0ff,0 0 30px #0ff;} 50% {text-shadow:0 0 30px #0ff,0 0 60px #0ff;} 100% {text-shadow:0 0 15px #0ff,0 0 30px #0ff;} }
-
-.artist-info {
-    background-color: rgba(0,0,0,0.6);
-    padding: 10px;
-    border-radius: 15px;
-    width: 100%;
-    text-align: center;
-    font-size: 14px;
-    line-height: 1.4;
-    box-shadow: 0 0 30px #0ff inset;
-}
-.artist-info img { width: 100px; height:100px; border-radius:50%; margin-bottom:10px; }
-
-.sidebar { display: flex; flex-direction: column; gap: 20px; width: 300px; }
-.box {
-    background-color: rgba(0,0,0,0.9);
-    padding: 15px;
-    border-radius: 15px;
-    box-shadow: 0 0 50px #0ff;
-}
-.box h2 { text-align: center; margin-bottom: 10px; font-size: 20px; color: #0ff; text-shadow: 0 0 6px #0ff; }
-.list-item { margin: 5px 0; font-size: 16px; }
-.list-item span { color: #0ff; font-weight: bold; text-shadow: 0 0 6px #0ff; }
-</style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#05070f">
+  <meta name="description" content="Última música ouvida no Spotify por Rui Cirilo, com histórico, top semanal, letra e informação do artista.">
+  <title>Rui Cirilo · Agora no Spotify</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Orbitron:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+  <script defer src="{{ url_for('static', filename='app.js') }}"></script>
 </head>
 <body>
-<div id="background"></div>
-<div class="container">
-    <div class="player">
-        <img id="album-cover" src="https://via.placeholder.com/400" alt="Capa do Álbum">
-        <div class="track-info">
-            <div class="track-name" id="track-name">Carregando...</div>
-            <div class="artist-name" id="artist-name"></div>
+  <div class="ambient ambient-one" aria-hidden="true"></div>
+  <div class="ambient ambient-two" aria-hidden="true"></div>
+  <div class="equalizer" id="equalizer" aria-hidden="true"></div>
+
+  <main class="app-shell">
+    <header class="site-header">
+      <div>
+        <p class="eyebrow">HISTÓRICO SPOTIFY · VIA LAST.FM</p>
+        <h1>Rui Cirilo <span>On Air</span></h1>
+      </div>
+      <div class="connection" id="connection">
+        <span class="connection-dot"></span>
+        <span id="connection-text">A ligar…</span>
+      </div>
+    </header>
+
+    <section class="dashboard" aria-label="Painel musical">
+      <article class="now-card glass">
+        <div class="cover-wrap">
+          <img
+            id="album-cover"
+            src="{{ url_for('static', filename='default-cover.svg') }}"
+            alt="Capa da música"
+            width="720"
+            height="720"
+          >
+          <div class="cover-glow" aria-hidden="true"></div>
+          <div class="live-badge" id="live-badge">
+            <span></span>
+            <strong id="live-label">A CARREGAR</strong>
+          </div>
         </div>
-        <div class="lyrics" id="lyrics-container">
-            <div class="line">Letra não disponível.</div>
+
+        <div class="now-content">
+          <p class="section-label">EM DESTAQUE</p>
+          <h2 id="track-name">A procurar a última música…</h2>
+          <p class="artist-name" id="artist-name">Spotify de {{ username }}</p>
+          <p class="album-name" id="album-name"></p>
+          <p class="heard-at" id="heard-at"></p>
+
+          <div class="actions">
+            <a class="primary-button disabled" id="spotify-link" href="#" target="_blank" rel="noopener noreferrer" aria-disabled="true">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm4.58 14.42a.62.62 0 0 1-.86.2c-2.35-1.43-5.3-1.76-8.78-.96a.63.63 0 0 1-.28-1.22c3.8-.87 7.07-.5 9.72 1.12.3.18.39.57.2.86Zm1.23-2.73a.78.78 0 0 1-1.08.26c-2.69-1.65-6.8-2.13-9.98-1.17a.78.78 0 1 1-.45-1.5c3.64-1.1 8.17-.56 11.25 1.33.37.23.49.71.26 1.08Zm.1-2.84C14.68 8.93 9.36 8.75 6.28 9.68a.94.94 0 0 1-.54-1.8c3.54-1.07 9.42-.85 13.13 1.35a.94.94 0 0 1-.96 1.62Z"/></svg>
+              Abrir no Spotify
+            </a>
+            <a class="ghost-button disabled" id="lastfm-link" href="#" target="_blank" rel="noopener noreferrer" aria-disabled="true">Ver no Last.fm</a>
+          </div>
         </div>
-        <div class="artist-info" id="artist-info"></div>
-    </div>
-    <div class="sidebar">
-        <div class="box">
-            <h2>Top 10 Mais Tocadas</h2>
-            <div id="top10"></div>
+
+        <div class="detail-grid">
+          <section class="detail-panel lyrics-panel">
+            <div class="panel-heading">
+              <div>
+                <p class="section-label">LETRA</p>
+                <h3>Palavras da música</h3>
+              </div>
+              <span class="source-label" id="lyrics-source"></span>
+            </div>
+            <div class="lyrics-content scroll-area" id="lyrics" aria-live="polite">
+              <p class="muted">A letra aparecerá quando a música for identificada.</p>
+            </div>
+          </section>
+
+          <section class="detail-panel artist-panel">
+            <div class="panel-heading">
+              <div>
+                <p class="section-label">ARTISTA</p>
+                <h3>Sobre quem estás a ouvir</h3>
+              </div>
+            </div>
+            <div id="artist-info" aria-live="polite">
+              <p class="muted">A informação do artista aparecerá aqui.</p>
+            </div>
+          </section>
         </div>
-        <div class="box">
-            <h2>Últimas Tocadas</h2>
-            <div id="recent"></div>
-        </div>
-    </div>
-</div>
+      </article>
 
-<script>
-const lastFmApiKey = '6e7c0a29cd508f42a6737e5fd3d6110b';
-const username = 'ruicirilo';
-const geniusToken = 'vXBJB0QUBQFqQ50N3ytHygmmA0PQ7p4Dvk8_B39gP0kElZ22-5j2CHThsbbgptVX';
-let currentTrackId = null;
-let lyricsData = [];
-let lyricTimer;
+      <aside class="side-column">
+        <section class="list-card glass">
+          <div class="card-heading">
+            <div>
+              <p class="section-label">ÚLTIMOS 7 DIAS</p>
+              <h2>Top 10</h2>
+            </div>
+            <span class="counter">10</span>
+          </div>
+          <ol class="track-list top-list" id="top-tracks" aria-live="polite">
+            <li class="loading-row">A carregar o top semanal…</li>
+          </ol>
+        </section>
 
-// Fundo animado equalizador
-const bg = document.getElementById('background');
-for(let i=0;i<150;i++){
-    const bar = document.createElement('div');
-    bar.classList.add('bar');
-    bar.style.animationDuration = (0.4+Math.random()*0.6)+'s';
-    bg.appendChild(bar);
-}
+        <section class="list-card glass">
+          <div class="card-heading">
+            <div>
+              <p class="section-label">HISTÓRICO</p>
+              <h2>Últimas ouvidas</h2>
+            </div>
+            <button class="icon-button" id="refresh-button" type="button" title="Atualizar agora" aria-label="Atualizar agora">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.65 6.35A8 8 0 1 0 19.73 14h-2.08A6 6 0 1 1 16.2 7.8L13 11h8V3l-3.35 3.35Z"/></svg>
+            </button>
+          </div>
+          <ul class="track-list recent-list" id="recent-tracks" aria-live="polite">
+            <li class="loading-row">A carregar o histórico…</li>
+          </ul>
+        </section>
+      </aside>
+    </section>
 
-async function fetchNowPlaying(){
-    try{
-        const res = await fetch(`https://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&user=${username}&api_key=${lastFmApiKey}&limit=1&format=json`);
-        const data = await res.json();
-        const track = data.recenttracks.track[0];
-        const trackId = track.mbid || (track.artist['#text']+' - '+track.name);
-        if(trackId !== currentTrackId){
-            currentTrackId = trackId;
-            const artist = track.artist['#text'];
-            const name = track.name;
-            document.getElementById('track-name').textContent = name;
-            document.getElementById('artist-name').textContent = artist;
-            fetchAlbumCoverLastFM(track);
-            fetchLyricsGenius(artist, name);
-            fetchArtistInfo(artist);
-        }
-    } catch(e){ console.error('Erro ao carregar música', e); }
-}
+    <footer>
+      <p>Atualização automática a cada 20 segundos</p>
+      <p id="last-update">Ainda não atualizado</p>
+    </footer>
+  </main>
 
-// Busca a capa diretamente no Last.fm
-function fetchAlbumCoverLastFM(track){
-    let imgUrl = '';
-    if(track.image){
-        for(let i=track.image.length-1;i>=0;i--){
-            if(track.image[i]['#text']){
-                imgUrl = track.image[i]['#text'];
-                break;
-            }
-        }
-    }
-    if(!imgUrl) imgUrl = 'https://via.placeholder.com/400';
-    document.getElementById('album-cover').src = imgUrl;
-}
-
-// Letras via Genius
-async function fetchLyricsGenius(artist, track){
-    try{
-        const res = await fetch(`/lyrics?artist=${encodeURIComponent(artist)}&track=${encodeURIComponent(track)}`);
-        const data = await res.json();
-        showLyrics(data.lines);
-    }catch(e){ console.error('Erro ao carregar letra', e); showLyrics([{text:'Erro ao carregar letra', time:0}]); }
-}
-
-function showLyrics(lines){
-    lyricsData = lines;
-    const container = document.getElementById('lyrics-container');
-    container.innerHTML = '';
-    lines.forEach((l, idx)=>{
-        const div = document.createElement('div');
-        div.classList.add('line');
-        div.id = 'line-'+idx;
-        div.textContent = l.text;
-        container.appendChild(div);
-    });
-    if(lyricTimer) clearInterval(lyricTimer);
-    let index = 0;
-    lyricTimer = setInterval(()=>{
-        document.querySelectorAll('.lyrics .line').forEach(l=>l.classList.remove('active'));
-        document.getElementById('line-'+index)?.classList.add('active');
-        document.getElementById('line-'+index)?.scrollIntoView({behavior:'smooth', block:'center'});
-        index++;
-        if(index>=lyricsData.length) index=0;
-    },3000);
-}
-
-// Informações do artista
-async function fetchArtistInfo(artist){
-    try{
-        const res = await fetch(`/artist?artist=${encodeURIComponent(artist)}`);
-        const data = await res.json();
-        const container = document.getElementById('artist-info');
-        container.innerHTML = '';
-        if(data.image) container.innerHTML += `<img src="${data.image}" alt="${artist}">`;
-        container.innerHTML += `<div>${artist}</div>`;
-        if(data.tags.length) container.innerHTML += `<div>${data.tags.join(', ')}</div>`;
-        container.innerHTML += `<div>${data.bio}</div>`;
-    }catch(e){ console.error('Erro ao carregar info artista', e); }
-}
-
-// Top 10 e recentes
-async function fetchTop10(){
-    try{
-        const res = await fetch(`https://ws.audioscrobbler.com/2.0/?method=user.gettoptracks&user=${username}&api_key=${lastFmApiKey}&period=7day&limit=10&format=json`);
-        const data = await res.json();
-        const container = document.getElementById('top10');
-        container.innerHTML = '';
-        data.toptracks.track.forEach((t,i)=>{
-            const div = document.createElement('div');
-            div.classList.add('list-item');
-            div.textContent = `${i+1}. ${t.name} - ${t.artist.name} (${t.playcount} plays)`;
-            container.appendChild(div);
-        });
-    }catch(e){ console.error('Erro ao carregar top 10:', e); }
-}
-
-async function fetchRecent(){
-    try{
-        const res = await fetch(`https://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&user=${username}&api_key=${lastFmApiKey}&limit=10&format=json`);
-        const data = await res.json();
-        const container = document.getElementById('recent');
-        container.innerHTML = '';
-        data.recenttracks.track.forEach(t=>{
-            const div = document.createElement('div');
-            div.classList.add('list-item');
-            const time = t.date?.['#text'] || 'Agora';
-            div.innerHTML = `<span>${t.name}</span> - ${t.artist['#text']} (${time})`;
-            container.appendChild(div);
-        });
-    }catch(e){ console.error('Erro ao carregar últimas músicas:', e); }
-}
-
-// Atualizações automáticas
-fetchNowPlaying(); fetchTop10(); fetchRecent();
-setInterval(fetchNowPlaying,15000);
-setInterval(fetchTop10,60000);
-setInterval(fetchRecent,30000);
-
-</script>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
