@@ -1,109 +1,72 @@
-import app as spotify_app
+# Rui Cirilo · Última música ouvida no Spotify
 
+Painel web futurista que mostra a música atual ou a última música ouvida no
+Spotify, usando os scrobbles da conta Last.fm `ruicirilo`.
 
-def sample_recent_payload():
-    return {
-        "recenttracks": {
-            "track": [
-                {
-                    "name": "Golden",
-                    "artist": {"#text": "HUNTR/X"},
-                    "album": {"#text": "KPop Demon Hunters"},
-                    "mbid": "",
-                    "url": "https://www.last.fm/music/HUNTR%2FX/_/Golden",
-                    "image": [{"#text": ""}],
-                    "@attr": {"nowplaying": "true"},
-                },
-                {
-                    "name": "Ordinary",
-                    "artist": {"#text": "Alex Warren"},
-                    "album": {"#text": "You'll Be Alright, Kid"},
-                    "url": "https://www.last.fm/music/Alex+Warren/_/Ordinary",
-                    "date": {"uts": "1700000000"},
-                    "image": [{"#text": "https://example.com/cover.jpg"}],
-                },
-            ]
-        }
-    }
+## O que inclui
 
+- música em reprodução e indicação **A ouvir agora**;
+- capa Last.fm com fallback automático do iTunes;
+- últimas 10 músicas ouvidas;
+- Top 10 dos últimos 7 dias;
+- letras via LRCLIB, com fallback para Lyrics.ovh;
+- biografia e géneros do artista;
+- atualização automática a cada 20 segundos;
+- interface responsiva para computador, telemóvel e televisão;
+- API protegida com timeouts, cache e cabeçalhos de segurança.
 
-def sample_top_payload():
-    return {
-        "toptracks": {
-            "track": [
-                {
-                    "name": "Golden",
-                    "artist": {"name": "HUNTR/X"},
-                    "playcount": "12",
-                    "url": "https://www.last.fm/music/HUNTR%2FX/_/Golden",
-                }
-            ]
-        }
-    }
+> O Spotify deve estar ligado ao Last.fm para que as músicas sejam registadas.
+> A aplicação lê esses registos; não acede à palavra-passe nem à conta Spotify.
 
+## Executar no Windows
 
-def test_dashboard_normalises_lastfm_data(monkeypatch):
-    spotify_app._cache.clear()
+No PowerShell, dentro da pasta do projeto:
 
-    def fake_lastfm(method, **_params):
-        if method == "user.getrecenttracks":
-            return sample_recent_payload()
-        if method == "user.gettoptracks":
-            return sample_top_payload()
-        raise AssertionError(method)
+```powershell
+py -3.11 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
+python app.py
+```
 
-    monkeypatch.setattr(spotify_app, "_lastfm", fake_lastfm)
-    monkeypatch.setattr(
-        spotify_app,
-        "_itunes_cover",
-        lambda _artist, _track: "https://example.com/itunes.jpg",
-    )
+Abrir `http://127.0.0.1:5000`.
 
-    client = spotify_app.app.test_client()
-    response = client.get("/api/dashboard")
+## Configuração
 
-    assert response.status_code == 200
-    data = response.get_json()
-    assert data["current"]["name"] == "Golden"
-    assert data["current"]["now_playing"] is True
-    assert data["current"]["cover"] == "https://example.com/itunes.jpg"
-    assert data["recent"][1]["timestamp"] == 1700000000
-    assert data["top"][0]["playcount"] == 12
+As variáveis são opcionais porque o projeto mantém a configuração atual como
+fallback:
 
+```env
+LASTFM_USERNAME=ruicirilo
+LASTFM_API_KEY=a_tua_chave_lastfm
+REQUEST_TIMEOUT=8
+APP_USER_AGENT=Spotify-Now-Playing/2.0
+```
 
-def test_artist_rejects_missing_query():
-    client = spotify_app.app.test_client()
-    response = client.get("/api/artist")
-    assert response.status_code == 400
-    assert "error" in response.get_json()
+Na Vercel, podem ser adicionadas em **Project Settings → Environment
+Variables**. Depois é necessário fazer um novo deploy.
 
+## Endpoints
 
-def test_lyrics_rejects_oversized_query():
-    client = spotify_app.app.test_client()
-    response = client.get(f"/api/lyrics?artist={'a' * 161}&track=Music")
-    assert response.status_code == 400
+| Endpoint | Função |
+| --- | --- |
+| `/api/dashboard` | música atual, histórico e Top 10 |
+| `/api/lyrics?artist=...&track=...` | letra da música |
+| `/api/artist?artist=...` | informação do artista |
+| `/api/health` | estado da aplicação |
 
+Os antigos endpoints `/lyrics` e `/artist` continuam disponíveis para manter
+compatibilidade.
 
-def test_synced_lyrics_are_converted_to_plain_lines():
-    synced = "[00:01.00]Primeira linha\n[00:05.25]Segunda linha"
-    assert spotify_app._plain_synced_lyrics(synced) == [
-        "Primeira linha",
-        "Segunda linha",
-    ]
+## Testes
 
+```powershell
+python -m pip install -r requirements-dev.txt
+python -m pytest -q
+```
 
-def test_security_headers_are_present():
-    client = spotify_app.app.test_client()
-    response = client.get("/")
-    assert response.status_code == 200
-    assert response.headers["X-Content-Type-Options"] == "nosniff"
-    assert response.headers["X-Frame-Options"] == "DENY"
-    assert "default-src 'self'" in response.headers["Content-Security-Policy"]
+## Publicar na Vercel
 
-
-def test_health_does_not_expose_api_key():
-    client = spotify_app.app.test_client()
-    response = client.get("/api/health")
-    data = response.get_json()
-    assert data["ok"] is True
-    assert "api_key" not in data
+O projeto usa Flask em `app.py` e inclui `vercel.json`. Ao ligar este
+repositório à Vercel, cada alteração em `main` cria automaticamente um novo
+deploy.
