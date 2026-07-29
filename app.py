@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 import re
 import time
+import unicodedata
 from threading import Lock
 from typing import Any, Callable
 from urllib.parse import quote
@@ -151,26 +152,54 @@ def _itunes_cover(artist: str, track: str) -> str:
 
     cache_key = f"itunes:{artist.casefold()}:{track.casefold()}"
 
+    def searchable(value: str) -> str:
+        value = unicodedata.normalize("NFKD", value)
+        value = "".join(character for character in value if not unicodedata.combining(character))
+        return re.sub(r"[^a-z0-9]+", " ", value.casefold()).strip()
+
+    def result_score(result: dict[str, Any]) -> int:
+        wanted_artist = searchable(artist)
+        wanted_track = searchable(track)
+        found_artist = searchable(_text(result.get("artistName")))
+        found_track = searchable(_text(result.get("trackName")))
+
+        score = 0
+        if found_artist == wanted_artist:
+            score += 8
+        elif wanted_artist in found_artist or found_artist in wanted_artist:
+            score += 4
+        if found_track == wanted_track:
+            score += 10
+        elif wanted_track in found_track or found_track in wanted_track:
+            score += 5
+        return score
+
     def load() -> str:
         try:
             data = _json_get(
                 ITUNES_API_URL,
                 params={
                     "term": f"{artist} {track}",
+                    "media": "music",
                     "entity": "song",
-                    "limit": 5,
+                    "limit": 15,
                     "country": "PT",
                 },
             )
         except UpstreamError:
             return ""
 
-        for result in _as_list(data.get("results") if isinstance(data, dict) else None):
-            if not isinstance(result, dict):
-                continue
-            artwork = _text(result.get("artworkUrl100"))
-            if artwork:
-                return artwork.replace("100x100bb", "600x600bb")
+        results = [
+            result
+            for result in _as_list(
+                data.get("results") if isinstance(data, dict) else None
+            )
+            if isinstance(result, dict) and _text(result.get("artworkUrl100"))
+        ]
+        if results:
+            best = max(results, key=result_score)
+            artwork = _text(best.get("artworkUrl100"))
+            return artwork.replace("100x100bb", "600x600bb")
         return ""
 
     return _cached(cache_key, 21_600, load)
@@ -208,10 +237,15 @@ def _dashboard_data() -> dict[str, Any]:
     ]
 
     current = recent[0] if recent else None
-    if current and current["cover"] == DEFAULT_COVER:
-        current["cover"] = (
-            _itunes_cover(current["artist"], current["name"]) or DEFAULT_COVER
-        )
+    if current:
+        itunes_cover = _itunes_cover(current["artist"], current["name"])
+        if itunes_cover:
+            current["cover"] = itunes_cover
+            current["cover_source"] = "iTunes"
+        else:
+            current["cover_source"] = (
+                "Last.fm" if current["cover"] != DEFAULT_COVER else None
+            )
 
     top_raw = _as_list(
         top_payload.get("toptracks", {}).get("track")

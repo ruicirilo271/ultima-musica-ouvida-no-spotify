@@ -6,7 +6,7 @@ Spotify, usando os scrobbles da conta Last.fm `ruicirilo`.
 ## O que inclui
 
 - música em reprodução e indicação **A ouvir agora**;
-- capa Last.fm com fallback automático do iTunes;
+- capa do iTunes em alta resolução, com fallback automático do Last.fm;
 - últimas 10 músicas ouvidas;
 - Top 10 dos últimos 7 dias;
 - letras via LRCLIB, com fallback para Lyrics.ovh;

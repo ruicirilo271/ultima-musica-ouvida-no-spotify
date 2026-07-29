@@ -11,7 +11,7 @@ def sample_recent_payload():
                     "album": {"#text": "KPop Demon Hunters"},
                     "mbid": "",
                     "url": "https://www.last.fm/music/HUNTR%2FX/_/Golden",
-                    "image": [{"#text": ""}],
+                    "image": [{"#text": "https://example.com/lastfm.jpg"}],
                     "@attr": {"nowplaying": "true"},
                 },
                 {
@@ -67,6 +67,7 @@ def test_dashboard_normalises_lastfm_data(monkeypatch):
     assert data["current"]["name"] == "Golden"
     assert data["current"]["now_playing"] is True
     assert data["current"]["cover"] == "https://example.com/itunes.jpg"
+    assert data["current"]["cover_source"] == "iTunes"
     assert data["recent"][1]["timestamp"] == 1700000000
     assert data["top"][0]["playcount"] == 12
 
@@ -90,6 +91,32 @@ def test_synced_lyrics_are_converted_to_plain_lines():
         "Primeira linha",
         "Segunda linha",
     ]
+
+
+def test_itunes_cover_selects_the_best_matching_result(monkeypatch):
+    spotify_app._cache.clear()
+    monkeypatch.setattr(
+        spotify_app,
+        "_json_get",
+        lambda *_args, **_kwargs: {
+            "results": [
+                {
+                    "artistName": "Outro Artista",
+                    "trackName": "Golden",
+                    "artworkUrl100": "https://example.com/wrong/100x100bb.jpg",
+                },
+                {
+                    "artistName": "HUNTR/X",
+                    "trackName": "Golden",
+                    "artworkUrl100": "https://example.com/right/100x100bb.jpg",
+                },
+            ]
+        },
+    )
+
+    assert spotify_app._itunes_cover("HUNTR/X", "Golden") == (
+        "https://example.com/right/600x600bb.jpg"
+    )
 
 
 def test_security_headers_are_present():
